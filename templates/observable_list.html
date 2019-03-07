@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>商品监控列表</title>
+    <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+
+    <script language="javascript">
+        $(document).ready(function () { //这个就是传说的ready
+            $(".row li").mouseover(function () {
+                //如果鼠标移到class为stripe的表格的tr上时，执行函数
+                $(this).addClass("over");
+            }).mouseout(function () {
+                //给这行添加class值为over，并且当鼠标一出该行时执行函数
+                $(this).removeClass("over");
+            }) //移除该行的class
+            $(".stripe li:even").addClass("alt");
+            //给class为stripe的表格的偶数行添加class值为alt
+        });
+
+        function over_get_items(obj, id) {
+            $.get("/item_list/" + id, function (data) {
+                if (data != null) {
+                    var dates = []
+                    var prices = []
+
+                    for (i = 0; i < data.length; i++) {
+                        dates.push($.parseJSON(data[i]).date)
+                        prices.push($.parseJSON(data[i]).min_price)
+                    }
+
+                    var chart = {
+                        backgroundColor: '#FCFFC5',
+                        type: 'line'
+                    }
+
+                    var title = {
+                        text: '价格波动'
+                    };
+                    var subtitle = {
+                        text: 'Source: taobao.com'
+                    };
+                    var xAxis = {
+                        categories: dates
+                    };
+                    var yAxis = {
+                        title: {
+                            text: '价格 (¥)'
+                        },
+                        plotLines: [{
+                            value: 0,
+                            width: 1,
+                            color: '#808080'
+                        }]
+                    };
+
+                    var tooltip = {
+                        valueSuffix: '\xB0C'
+                    }
+
+                    var legend = {
+                        layout: 'vertical',
+                        align: 'right',
+                        verticalAlign: 'middle',
+                        borderWidth: 0
+                    };
+
+                    var series = [
+                        {
+                            name: '最低价格',
+                            data: prices
+                        }
+                    ];
+
+                    var json = {};
+
+                    json.title = title;
+                    json.subtitle = subtitle;
+                    json.xAxis = xAxis;
+                    json.yAxis = yAxis;
+                    json.tooltip = tooltip;
+                    json.legend = legend;
+                    json.series = series;
+                    json.chart = chart;
+
+                    $('#trend').highcharts(json);
+
+                    $('#trend').css("left",(obj.offsetLeft - $('#trend').outerWidth(true))+"px");
+                    $('#trend').css("top",(obj.offsetTop + 25)+"px");
+
+
+                }
+            }, "json");
+            $("#trend").show();
+        }
+        function out_get_items(){
+          $("#trend").hide();  
+        }
+    </script>
+    <style>
+        .row {
+            width: auto;
+            padding: 5px 30px 5px 50px;
+            background: #FFF;
+        }
+
+        .row li {
+            padding: 5px 5px 5px 5px;
+            background: #FFF;
+            vertical-align: middle;
+        }
+
+        span, img {
+            vertical-align: middle;
+        }
+
+        /* 默认背景被白色 */
+        .row li.alt {
+            background: #F2F2F2;
+        }
+
+        /* 默认隔行背景颜色 */
+        .row li.over {
+            background: #EEECEB;
+        }
+
+        #trend{
+            display: none;
+            position:absolute;
+        }
+
+    </style>
+</head>
+<body>
+<div id="trend"></div>
+{% if list %}
+    <ol class="row">
+        <div>
+            <span>名称</span>
+            <span style="float:right">
+                    <span>最低价格</span>
+                    <span style="margin:0 132px 0 50px;">日期</span>
+                </span>
+        </div>
+        {% for foo in list %}
+            <li><a href="{{ foo.url }}" target="_blank">
+                <span>{{ foo.v_item.title }}</span></a>
+                <span style="float:right">
+                    <span onmouseover="over_get_items(this,'{{ foo.id }}')" onmouseout="out_get_items()">¥{{ foo.v_item.min_price }}
+                        {% if foo.v_trend>0 %}
+                            &nbsp;
+                            <img style="width: 20px;height: 20px" src="{{ url_for('static',filename='up.png') }}"/>
+                        {% elif foo.v_trend<0 %}
+                            &nbsp;
+                            <img style="width: 20px;height: 20px" src="{{ url_for('static',filename='off.png') }}"/>
+                        {% endif %}
+                    </span>
+                    <span style="margin:0 0 0 50px;">{{ foo.v_item.date }}</span>
+                </span>
+            </li>
+        {% endfor %}
+    </ol>
+{% else %}
+    <span>没有数据</span>
+{% endif %}
+</body>
+</html>

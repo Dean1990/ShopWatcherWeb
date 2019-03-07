@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>订阅商品</title>
+    <style>
+        table {
+            width: 50%;
+            vertical-align: top;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        input[type="text"]{
+            width:200px;
+            background: none;
+            border-style: none none solid none;
+            border-width: 1px;
+        }
+    </style>
+</head>
+<body>
+    <form method="post" action="">
+        <table align="center">
+            <tr>
+                <td class="right">邮箱：</td>
+                <td><input name="mail" type="text"></td>
+            </tr>
+            <tr>
+                <td class="right">商品链接：</td>
+                <td><input name="url" type="text"></td>
+            </tr>
+            <tr>
+                <td class="right">期望价格：¥</td>
+                <td><input name="hope_price" type="text"></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><input name="mail" type="submit"></td>
+            </tr>
+        </table>
+    </form>
+</body>
+</html>
