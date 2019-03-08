@@ -20,12 +20,12 @@
         });
 
         function over_get_items(obj, id) {
-            $.get("/item_list/" + id, function (data) {
+            $.get("/item_list/" + id +"/"+20, function (data) {
                 if (data != null) {
                     var dates = []
                     var prices = []
 
-                    for (i = 0; i < data.length; i++) {
+                    for (i = data.length-1; i >= 0 ;i--) {
                         dates.push($.parseJSON(data[i]).date)
                         prices.push($.parseJSON(data[i]).min_price)
                     }
@@ -97,6 +97,17 @@
         function out_get_items(){
           $("#trend").hide();  
         }
+        function subscribe(id) {
+
+        }
+        function unsubscribe(id) {
+            $.get("/unsubscribe/2/"+id,function (data) {
+                alert(data)
+                if(data){
+                    //
+                }
+            })
+        }
     </script>
     <style>
         .row {
@@ -129,6 +140,20 @@
             display: none;
             position:absolute;
         }
+        .price_column{
+            width:100px;
+            display:inline-block;
+        }
+        .date_column{
+            width:180px;
+            margin:0 0 0 20px;
+            display:inline-block;
+        }
+        .subscribe_column{
+            margin:0 0 0 20px;
+            display:inline-block;
+            width:60px;
+        }
 
     </style>
 </head>
@@ -136,18 +161,19 @@
 <div id="trend"></div>
 {% if list %}
     <ol class="row">
-        <div>
-            <span>名称</span>
+        <div class="head">
+            <b>名称</b>
             <span style="float:right">
-                    <span>最低价格</span>
-                    <span style="margin:0 132px 0 50px;">日期</span>
+                    <b class="price_column">最低价格</b>
+                    <b class="date_column">日期</b>
+                    <b class="subscribe_column">订阅</b>
                 </span>
         </div>
         {% for foo in list %}
             <li><a href="{{ foo.url }}" target="_blank">
                 <span>{{ foo.v_item.title }}</span></a>
                 <span style="float:right">
-                    <span onmouseover="over_get_items(this,'{{ foo.id }}')" onmouseout="out_get_items()">¥{{ foo.v_item.min_price }}
+                    <span class="price_column" onmouseover="over_get_items(this,'{{ foo.id }}')" onmouseout="out_get_items()">¥{{ foo.v_item.min_price }}
                         {% if foo.v_trend>0 %}
                             &nbsp;
                             <img style="width: 20px;height: 20px" src="{{ url_for('static',filename='up.png') }}"/>
@@ -156,7 +182,12 @@
                             <img style="width: 20px;height: 20px" src="{{ url_for('static',filename='off.png') }}"/>
                         {% endif %}
                     </span>
-                    <span style="margin:0 0 0 50px;">{{ foo.v_item.date }}</span>
+                    <span class="date_column">{{ foo.v_item.date }}</span>
+                    {% if foo.v_is_subscribe %}
+                    <input class="subscribe_column" type="button" value="取消订阅" onclick="unsubscribe({{ foo.id }})"/>
+                    {% else %}
+                    <input class="subscribe_column" type="button" value="订阅" onclick="subscribe({{ foo.id }})"/>
+                    {% endif %}
                 </span>
             </li>
         {% endfor %}

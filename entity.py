@@ -38,6 +38,7 @@ class Observable:
 
     v_item = None
     v_trend = 0
+    v_is_subscribe = False
 
     def __init__(self,id,url,date):
         self.url = url

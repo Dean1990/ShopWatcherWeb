@@ -275,6 +275,24 @@ def getSubscriber(id):
         db.close()
     return subscriber
 
+def unsubscribeById(subscriber_id,observable_id):
+    b = False
+    db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                         config.database_config['passwd'], config.database_config['db_name'])
+    cursor = db.cursor()
+    sql = "delete from subscribe where subscriber_id = " + str(subscriber_id) + " and observable_id = " + str(
+        observable_id)
+    print("database.unsubscribe >> " + sql)
+    try:
+        cursor.execute(sql)
+        db.commit()
+        b = True
+    except Exception as e:
+        print("database.unsubscribe >> " + e)
+        db.rollback()
+    db.close()
+    return b
+
 def unsubscribe(url,mail):
     '''
     取消订阅
@@ -282,6 +300,7 @@ def unsubscribe(url,mail):
     :param mail:
     :return:
     '''
+    b = False
     url = trimUrl(url)
     if url and mail:
         db = pymysql.connect(config.database_config['host'], config.database_config['user'],
@@ -305,7 +324,30 @@ def unsubscribe(url,mail):
                     print("database.unsubscribe >> " + sql)
                     cursor.execute(sql)
                     db.commit()
+                    b = True
         except Exception as e:
             print("database.unsubscribe >> " + e)
             db.rollback()
         db.close()
+        return b
+
+def isSubscribe(subscriber_id,observable_id):
+    '''
+    是否订阅
+    :param subscriber_id:
+    :param observable_id:
+    :return:
+    '''
+    b = False
+    db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                         config.database_config['passwd'], config.database_config['db_name'])
+    cursor = db.cursor()
+    sql = 'select * from subscribe where subscriber_id = ' + str(subscriber_id) + ' and observable_id = ' + str(observable_id)
+    print("database.isSubscribe >> " + sql)
+    try:
+        results = cursor.execute(sql)
+        b = results > 0
+    except Exception as e:
+        print("database.isSubscribe >> " + str(e))
+    db.close()
+    return b
