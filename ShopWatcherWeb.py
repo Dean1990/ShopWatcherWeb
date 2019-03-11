@@ -1,6 +1,8 @@
 import json
+from functools import cmp_to_key
 
 import pymysql
+import time
 from flask import redirect
 from flask import render_template, jsonify
 from flask import request
@@ -35,25 +37,35 @@ def test_db():
     db.close()
     return state
 
+@app.route('/observable_list')
 @app.route('/observable_list/<int:subscriber_id>')
-def observable_list(subscriber_id):
+def observable_list(subscriber_id = None):
     '''
     商品监控列表
     :return:
     '''
+    subscriber = None
+    if subscriber_id:
+        subscriber = database.getSubscriber(subscriber_id)
+
     observables = database.getObservableAll()
     for obs in observables :
-        obs.v_is_subscribe = database.isSubscribe(subscriber_id,obs.id)
+        if subscriber_id:
+            subscribe = database.getSubscribe(subscriber_id, obs.id)
+            obs.v_subscribe = subscribe
+
         items = database.getItems(obs.url,-20)
         if items and len(items):
-            print(items[0])
+            # print(items[0])
             obs.v_item = items[0]
             for item in items:
                 if item.min_price != items[0].min_price:
                     obs.v_trend = items[0].min_price - item.min_price
                     break
-
-    return render_template('observable_list.html',list = observables)
+    if observables:
+        # 排序 把没有订阅的放到后这
+        observables.sort(key=cmp_to_key(utils.obs_cmp))
+    return render_template('observable_list.html',list = observables,user = subscriber)
 
 @app.route('/item_list/<int:id>/<int:total>')
 def item_list(id,total):
@@ -72,7 +84,8 @@ def item_list(id,total):
     return jsonify(data);
 
 @app.route('/add_subscribe',methods=['POST','GET'])
-def add_subscribe():
+@app.route('/add_subscribe/<int:observable_id>/<int:subscriber_id>',methods=['POST','GET'])
+def add_subscribe(observable_id = None,subscriber_id = None):
     '''
     订阅商品
     :return:
@@ -83,25 +96,41 @@ def add_subscribe():
         hope_price = request.form['hope_price']
         url = utils.trimUrl(url)
         if mail and url:
-            subscriber_id = database.addSubscriber(mail)
-            if not hope_price:
-                hope_price = 0
-            database.subscribe(subscriber_id,url,hope_price)
-            observable = database.getObservableByUrl(url)
-            if observable:
-                observables = []
-                observables.append(observable)
-                task.classifyCaptureSave(observables)
+            subscriber = database.addSubscriber(mail)
+            if subscriber:
+                if not hope_price:
+                    hope_price = 0
+                task.subscribe(subscriber.id,url,hope_price)
+                observable = database.getObservableByUrl(url)
+                if observable:
+                    observables = []
+                    observables.append(observable)
+                    task.classifyCaptureSave(observables)
         else:
             return "邮箱和商品链接不能为空"
-        return redirect(url_for('observable_list'))
+        return redirect(url_for('observable_list',subscriber_id = subscriber.id))
     else:
-        return render_template('add_subscribe.html')
+        url = ''
+        mail = ''
+        if observable_id:
+            observable = database.getObservable(observable_id)
+            if observable :
+                url = observable.url
+        if subscriber_id:
+            subscriber = database.getSubscriber(subscriber_id)
+            if subscriber:
+                mail = subscriber.mail
+        return render_template('add_subscribe.html',mail = mail,url = url)
 
-@app.route('/unsubscribe/<int:subscriber_id>/<int:observable_id>')
-def unsubscribe(subscriber_id,observable_id):
-    '''取消订阅'''
-    return jsonify(database.unsubscribeById(subscriber_id,observable_id))
+@app.route('/unsubscribe/<int:observable_id>/<int:subscriber_id>')
+def unsubscribe(observable_id,subscriber_id):
+    '''
+    取消订阅
+    :param subscriber_id:
+    :param observable_id:
+    :return:
+    '''
+    return jsonify(database.delSubscribeById(subscriber_id,observable_id))
 
 if __name__ == '__main__':
     app.run(debug=True)

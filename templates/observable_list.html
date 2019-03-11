@@ -97,22 +97,25 @@
         function out_get_items(){
           $("#trend").hide();  
         }
-        function subscribe(id) {
+        function subscribe(observable_id,subscriber_id) {
+{#            window.open('/add_subscribe/'+observable_id+'/'+subscriber_id,'_self')#}
+            window.location.href='/add_subscribe/'+observable_id+'/'+subscriber_id
+        }
+        function unsubscribe(observable_id,subscriber_id,title) {
+            if(confirm("取消订阅 - " + title)) {
+                $.get('/unsubscribe/' + observable_id + '/' + subscriber_id, function (data) {
+                    if (data) {
+                        window.location.reload()
+                    }
+                })
+            }
+        }
 
-        }
-        function unsubscribe(id) {
-            $.get("/unsubscribe/2/"+id,function (data) {
-                alert(data)
-                if(data){
-                    //
-                }
-            })
-        }
     </script>
     <style>
         .row {
             width: auto;
-            padding: 5px 30px 5px 50px;
+            padding: 5px 0 5px 0;
             background: #FFF;
         }
 
@@ -144,49 +147,67 @@
             width:100px;
             display:inline-block;
         }
+        .price_column2{
+            width:60px;
+            margin:0 0 0 10px;
+            display:inline-block;
+        }
         .date_column{
-            width:180px;
-            margin:0 0 0 20px;
+            width:100px;
+            margin:0 0 0 10px;
             display:inline-block;
         }
         .subscribe_column{
-            margin:0 0 0 20px;
+            margin:0 0 0 10px;
             display:inline-block;
-            width:60px;
+            width:110px;
         }
 
     </style>
 </head>
-<body>
+<body style="padding: 10px 30px 10px 30px">
 <div id="trend"></div>
+{% if user %}
+    <div style="display:table;text-align: right;width:100%;">
+        <span style="border-style: none none solid none;border-bottom-width: 1px;">用户：{{ user.mail }}</span>
+    </div>
+{% endif %}
 {% if list %}
     <ol class="row">
         <div class="head">
             <b>名称</b>
             <span style="float:right">
                     <b class="price_column">最低价格</b>
-                    <b class="date_column">日期</b>
-                    <b class="subscribe_column">订阅</b>
+                    <b class="price_column2">史低</b>
+                    <b class="date_column">更新日期</b>
+                    <b class="subscribe_column">订阅(期望价格)</b>
                 </span>
         </div>
         {% for foo in list %}
             <li><a href="{{ foo.url }}" target="_blank">
                 <span>{{ foo.v_item.title }}</span></a>
                 <span style="float:right">
-                    <span class="price_column" onmouseover="over_get_items(this,'{{ foo.id }}')" onmouseout="out_get_items()">¥{{ foo.v_item.min_price }}
+                    <span class="price_column" onmouseover="over_get_items(this,'{{ foo.id }}')" onmouseout="out_get_items()">
+                        ¥{{ foo.v_item.min_price }}
                         {% if foo.v_trend>0 %}
-                            &nbsp;
                             <img style="width: 20px;height: 20px" src="{{ url_for('static',filename='up.png') }}"/>
                         {% elif foo.v_trend<0 %}
-                            &nbsp;
                             <img style="width: 20px;height: 20px" src="{{ url_for('static',filename='off.png') }}"/>
                         {% endif %}
                     </span>
-                    <span class="date_column">{{ foo.v_item.date }}</span>
-                    {% if foo.v_is_subscribe %}
-                    <input class="subscribe_column" type="button" value="取消订阅" onclick="unsubscribe({{ foo.id }})"/>
+                    <span class="price_column2">¥{{ foo.lowest_price }}</span>
+                    <span class="date_column">
+                        {{ foo.v_item.date.strftime('%m-%d %H:%M') }}
+                    </span>
+                    {% if foo.v_subscribe %}
+                        <input class="subscribe_column" type="button" value="取消订阅(¥{{ foo.v_subscribe.hope_price }})"
+                               onclick="unsubscribe({{ foo.id }},{{ foo.v_subscribe.subscriber_id }},'{{ foo.v_item.title }}')"/>
                     {% else %}
-                    <input class="subscribe_column" type="button" value="订阅" onclick="subscribe({{ foo.id }})"/>
+                        {% if user %}
+                            <input class="subscribe_column" type="button" value="订阅" onclick="subscribe({{ foo.id }},{{ user.id }})"/>
+                        {% else %}
+                            <input class="subscribe_column" type="button" value="订阅" onclick="subscribe({{ foo.id }},0)"/>
+                        {% endif %}
                     {% endif %}
                 </span>
             </li>

@@ -7,9 +7,58 @@ import datetime
 # import matplotlib.pyplot as plt
 
 import config
-from database import getObservableAll, saveItem, getSubscribes, getItems, getSubscriber
+from database import getObservableAll, addItem, getSubscribes, getItems, getSubscriber, getObservableByUrl, \
+    getSubscribe, addObservable, addSubscribe, getSubscriberByMail, delSubscribeById, updateObservable, updateSubscribe
 from spider import captureTaobaoItem
+from utils import trimUrl
 
+
+def subscribe(subscriber_id, url, hope_price=0):
+    '''
+    订阅
+    :return:
+    '''
+    url = trimUrl(url)
+    if subscriber_id and url:
+
+            observable = getObservableByUrl(url)
+            if observable:
+                # 如果存在 去查订阅关系
+                sub = getSubscribe(subscriber_id,observable.id)
+                if sub :
+                    # 该用户已经订阅过
+                    print("task.subscribe >> subscriber id:" + str(subscriber_id) + "has subscribed " + url)
+                    sub.hope_price = hope_price
+                    updateSubscribe(sub)
+                else:
+                    # 订阅
+                    addSubscribe(subscriber_id,observable.id,hope_price)
+            else:
+                # 先添加到被观察者中，再订阅
+                addObservable(url)
+                # 查询出ID
+                observable = getObservableByUrl(url)
+                if observable:
+                    # 订阅
+                    addSubscribe(subscriber_id, observable.id, hope_price)
+
+def unsubscribe(url,mail):
+    '''
+    取消订阅
+    :param url:
+    :param mail:
+    :return:
+    '''
+    b = False
+    url = trimUrl(url)
+    if url and mail:
+        subscriber = getSubscriberByMail(mail)
+        if subscriber:
+            observable = getObservableByUrl(url)
+            if observable:
+                # 只删除订阅关系即可
+                b = delSubscribeById(subscriber.id,observable.id)
+    return b
 
 def classifyCaptureSave(observables):
     '''
@@ -27,7 +76,11 @@ def classifyCaptureSave(observables):
         # elif
         if item:
             # 保存
-            saveItem(item)
+            addItem(item)
+            #更新最低价
+            if obs.lowest_price  == 0 or float(obs.lowest_price) > float(item.min_price):
+                obs.lowest_price = item.min_price
+                updateObservable(obs)
             # 对比价格
             comparePrice(item,obs.id)
 

@@ -12,9 +12,9 @@ def initDatabase():
     '''
     db = pymysql.connect(config.database_config['host'], config.database_config['user'], config.database_config['passwd'], config.database_config['db_name'])
     cursor = db.cursor()
-    item_sql = "CREATE TABLE IF NOT EXISTS `item` (`id` int(11) NOT NULL AUTO_INCREMENT,`url` varchar(255) NOT NULL,`title` varchar(255) DEFAULT NULL,`min_price` decimal(10,0) NOT NULL,`max_price` decimal(10,0) DEFAULT NULL,`date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
-    observable_sql = "CREATE TABLE IF NOT EXISTS `observable` (`id` int(11) NOT NULL AUTO_INCREMENT,`url` varchar(255) NOT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
-    subscribe_sql = "CREATE TABLE IF NOT EXISTS `subscribe` (`id` int(11) NOT NULL AUTO_INCREMENT,`subscriber_id` int(11) NOT NULL,`observable_id` int(11) NOT NULL,`hope_price` decimal(10,0) DEFAULT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
+    item_sql = "CREATE TABLE IF NOT EXISTS `item` (`id` int(11) NOT NULL AUTO_INCREMENT,`url` varchar(255) NOT NULL,`title` varchar(255) DEFAULT NULL,`min_price` decimal(10,2) NOT NULL,`max_price` decimal(10,2) DEFAULT NULL,`date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
+    observable_sql = "CREATE TABLE IF NOT EXISTS `observable` (`id` int(11) NOT NULL AUTO_INCREMENT,`url` varchar(255) NOT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,`lowest_price` decimal(10,2) DEFAULT '0',PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
+    subscribe_sql = "CREATE TABLE IF NOT EXISTS `subscribe` (`id` int(11) NOT NULL AUTO_INCREMENT,`subscriber_id` int(11) NOT NULL,`observable_id` int(11) NOT NULL,`hope_price` decimal(10,2) DEFAULT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     subscriber_sql = "CREATE TABLE IF NOT EXISTS `subscriber` (`id` int(11) NOT NULL AUTO_INCREMENT,`name` varchar(255) DEFAULT NULL,`phone` varchar(255) DEFAULT NULL,`mail` varchar(255) NOT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     try:
         print("database.initDatabase >> " + item_sql)
@@ -31,7 +31,7 @@ def initDatabase():
     db.close()
 
 
-def saveItem(item):
+def addItem(item):
     '''
     保存到数据库
     :param item:
@@ -87,38 +87,59 @@ def getItems(url, limit=0):
 def addSubscriber(mail,phone = "", name=""):
     '''
     增加订阅者
-    :return: 新增订阅者的ID str
+    :return: 新增订阅者
     '''
+    subscriber = None
     if mail:
         db = pymysql.connect(config.database_config['host'], config.database_config['user'], config.database_config['passwd'], config.database_config['db_name'])
         cursor = db.cursor()
-        select_sql = "select * from subscriber where mail = '" + mail + "'"
-        print("database.addSubscriber >> " + select_sql)
         try:
-            cursor.execute(select_sql)
-            results = cursor.fetchall()
             sql = ""
-            if results and len(results):
+            subscriber = getSubscriberByMail(mail)
+            if subscriber:
                 # 存在
                 if not phone :
-                    phone = results[0][2]
+                    phone = subscriber.phone
+                if not name :
+                    name = subscriber.name
                 sql = "update subscriber set phone = '" + phone + "', mail = '" + mail + "', name = '" + name + "' where id = " + str(
-                    results[0][0])
+                    subscriber.id)
                 print("database.addSubscriber >> " + sql)
             else:
                 sql = "insert into subscriber(phone,mail,name) values('" + phone + "','" + mail + "','" + name + "')"
             print("database.addSubscriber >> " + sql)
             cursor.execute(sql)
             db.commit()
-            cursor.execute(select_sql)
-            results = cursor.fetchall()
-            if results and len(results):
-                return str(results[0][0])
+            subscriber = getSubscriberByMail(mail)
+
         except Exception as e:
             print("database.addSubscriber >> " + e)
             db.rollback()
         db.close()
+    return subscriber
 
+def updateObservable(observable):
+    '''
+    更新 被观察者
+    :param observable:
+    :return:
+    '''
+    b = False
+    if observable and observable.id:
+        db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                             config.database_config['passwd'], config.database_config['db_name'])
+        cursor = db.cursor()
+        sql = "update observable set url = '" + observable.url + "',lowest_price = " + str(observable.lowest_price) +" where id = " + str(observable.id)
+        print("database.updateObservable >> " + sql)
+        try :
+            cursor.execute(sql)
+            db.commit()
+            b = True
+        except Exception as e:
+            print("database.updateObservable >> "  + str(e))
+            db.rollback()
+        db.close()
+    return b
 def getObservableByUrl(url):
     observable = None
     db = pymysql.connect(config.database_config['host'], config.database_config['user'],
@@ -130,60 +151,79 @@ def getObservableByUrl(url):
         cursor.execute(sql)
         results = cursor.fetchall()
         if results and len(results):
-            observable = Observable(results[0][0], results[0][1], results[0][2])
+            observable = Observable(results[0][0], results[0][1], results[0][2],results[0][3])
     except:
         print("database.getObservableByUrl >> Error: unable to fetch data")
     db.close()
     return observable
 
-def subscribe(subscriber_id, url, hope_price=0):
+def addObservable(url,lowest_price = 0):
     '''
-    订阅
+    添加被观察者
+    :param url:
+    :param lowest_price:
     :return:
     '''
     url = trimUrl(url)
-    if subscriber_id and url:
-        db = pymysql.connect(config.database_config['host'], config.database_config['user'], config.database_config['passwd'], config.database_config['db_name'])
+    if url:
+        db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                             config.database_config['passwd'], config.database_config['db_name'])
         cursor = db.cursor()
-        sql = "select * from observable where url = '" + url + "'"
-        print("database.subscribe >> " + sql)
         try:
+            sql = "insert into observable(url,lowest_price) values('" + url + "',"+ str(lowest_price)+" )"
+            print("database.subscribe >> " + sql)
             cursor.execute(sql)
-            results = cursor.fetchall()
-            if results and len(results):
-                # 如果存在 去查订阅关系
-                obs_id = str(results[0][0])
-                sql = "select * from subscribe where subscriber_id = " + subscriber_id + " and observable_id = " + obs_id
-                cursor.execute(sql)
-                results = cursor.fetchall()
-                if results and len(results):
-                    # 该用户已经订阅过
-                    print("database.subscribe >> subscriber id:" + str(subscriber_id) + "has subscribed " + url)
-                else:
-                    # 订阅
-                    sql = "insert into subscribe(subscriber_id,observable_id,hope_price) values(" + subscriber_id + "," + obs_id + "," + str(hope_price) + ")"
-                    cursor.execute(sql)
-                    db.commit()
-            else:
-                # 先添加到被观察者中，再订阅
-                sql = "insert into observable(url) values('" + url + "')"
-                print("database.subscribe >> " + sql)
-                cursor.execute(sql)
-                db.commit()
-                # 查询出ID
-                sql = "select * from observable where url = '" + url + "'"
-                print("database.subscribe >> " + sql)
-                cursor.execute(sql)
-                results = cursor.fetchall()
-                if results and len(results):
-                    obs_id = str(results[0][0])
-                    # 订阅
-                    sql = "insert into subscribe(subscriber_id,observable_id,hope_price) values(" + subscriber_id + "," + obs_id + "," + str(hope_price) + ")"
-                    cursor.execute(sql)
-                    db.commit()
+            db.commit()
         except Exception as e:
             print("database.subscribe >> " + e)
             db.rollback()
+        db.close()
+
+def updateSubscribe(subscribe):
+    '''
+    更新订阅关系
+    :param subscribe:
+    :return:
+    '''
+    b = False
+    if subscribe and subscribe.id:
+        db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                             config.database_config['passwd'], config.database_config['db_name'])
+        cursor = db.cursor()
+        sql = "update subscribe set subscriber_id = " + str(subscribe.subscriber_id) + ",observable_id = " + \
+              str(subscribe.observable_id) + ",hope_price = " + str(subscribe.hope_price) + " where id = " + str(subscribe.id)
+        print("database.updateSubscribe >> " + sql)
+        try:
+            cursor.execute(sql)
+            db.commit()
+            b = True
+        except Exception as e:
+            print("database.updateSubscribe >> " + e)
+            db.rollback()
+        db.close()
+    return b
+
+def addSubscribe(subscriber_id,observable_id,hope_price):
+    '''
+    订阅
+    :param subscriber_id:
+    :param observable_id:
+    :param hope_price:
+    :return:
+    '''
+    if subscriber_id and observable_id:
+        db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                             config.database_config['passwd'], config.database_config['db_name'])
+        cursor = db.cursor()
+        sql = "insert into subscribe(subscriber_id,observable_id,hope_price) values(" + str(subscriber_id) + "," + str(
+            observable_id) + "," + str(hope_price) + ")"
+        print("database.addSubscribe >> " + sql)
+        try:
+            cursor.execute(sql)
+            db.commit()
+        except Exception as e:
+            print("database.addSubscribe >> " + e)
+        db.rollback()
         db.close()
 
 def getObservable(id):
@@ -201,7 +241,7 @@ def getObservable(id):
         cursor.execute(sql)
         results = cursor.fetchall()
         if results and len(results):
-            observable = Observable(results[0][0],results[0][1],results[0][2])
+            observable = Observable(results[0][0],results[0][1],results[0][2],results[0][3])
     except:
         print("database.getObservable >> Error: unable to fetch data")
     db.close()
@@ -220,7 +260,7 @@ def getObservableAll():
         cursor.execute(sql)
         results = cursor.fetchall()
         for row in results:
-            observable = Observable(row[0], row[1], row[2])
+            observable = Observable(row[0], row[1], row[2],row[3])
             observables.append(observable)
     except:
         print("database.getObservableAll >> Error: unable to fetch data")
@@ -252,6 +292,23 @@ def getSubscribes(observable_id):
         db.close()
     return subscribes
 
+def getSubscriberByMail(mail):
+    subscriber = None
+    if mail:
+        db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                             config.database_config['passwd'], config.database_config['db_name'])
+        cursor = db.cursor()
+        select_sql = "select * from subscriber where mail = '" + mail + "'"
+        print("database.getSubscriberByMail >> " + select_sql)
+        try:
+            cursor.execute(select_sql)
+            results = cursor.fetchall()
+            if results and len(results):
+                subscriber = Subscriber(results[0][0], results[0][1], results[0][2], results[0][3], results[0][4])
+        except:
+            print("database.getSubscriberByMail >> Error: unable to fetch data")
+        db.close()
+    return subscriber
 
 def getSubscriber(id):
     '''
@@ -275,65 +332,9 @@ def getSubscriber(id):
         db.close()
     return subscriber
 
-def unsubscribeById(subscriber_id,observable_id):
-    b = False
-    db = pymysql.connect(config.database_config['host'], config.database_config['user'],
-                         config.database_config['passwd'], config.database_config['db_name'])
-    cursor = db.cursor()
-    sql = "delete from subscribe where subscriber_id = " + str(subscriber_id) + " and observable_id = " + str(
-        observable_id)
-    print("database.unsubscribe >> " + sql)
-    try:
-        cursor.execute(sql)
-        db.commit()
-        b = True
-    except Exception as e:
-        print("database.unsubscribe >> " + e)
-        db.rollback()
-    db.close()
-    return b
-
-def unsubscribe(url,mail):
+def delSubscribeById(subscriber_id,observable_id):
     '''
-    取消订阅
-    :param url:
-    :param mail:
-    :return:
-    '''
-    b = False
-    url = trimUrl(url)
-    if url and mail:
-        db = pymysql.connect(config.database_config['host'], config.database_config['user'],
-                             config.database_config['passwd'], config.database_config['db_name'])
-        cursor = db.cursor()
-        sql = "select * from subscriber where mail = " + mail
-        print("database.unsubscribe >> " + sql)
-        try:
-            cursor.execute(sql)
-            results = cursor.fetchall()
-            if results and len(results):
-                subscriber_id = results[0][0]
-                sql = "select * from observable where url = " + url
-                print("database.unsubscribe >> " + sql)
-                cursor.execute(sql)
-                results = cursor.fetchall()
-                if results and len(results):
-                    observable_id = results[0][0]
-                    # 只删除订阅关系即可
-                    sql = "delete from subscribe where subscriber_id = "+str(subscriber_id) +" and observable_id = " + str(observable_id)
-                    print("database.unsubscribe >> " + sql)
-                    cursor.execute(sql)
-                    db.commit()
-                    b = True
-        except Exception as e:
-            print("database.unsubscribe >> " + e)
-            db.rollback()
-        db.close()
-        return b
-
-def isSubscribe(subscriber_id,observable_id):
-    '''
-    是否订阅
+    删除订阅关系
     :param subscriber_id:
     :param observable_id:
     :return:
@@ -342,12 +343,38 @@ def isSubscribe(subscriber_id,observable_id):
     db = pymysql.connect(config.database_config['host'], config.database_config['user'],
                          config.database_config['passwd'], config.database_config['db_name'])
     cursor = db.cursor()
-    sql = 'select * from subscribe where subscriber_id = ' + str(subscriber_id) + ' and observable_id = ' + str(observable_id)
-    print("database.isSubscribe >> " + sql)
+    sql = "delete from subscribe where subscriber_id = " + str(subscriber_id) + " and observable_id = " + str(
+        observable_id)
+    print("database.delSubscribeById >> " + sql)
     try:
-        results = cursor.execute(sql)
-        b = results > 0
+        result = cursor.execute(sql)
+        db.commit()
+        b = result > 0
     except Exception as e:
-        print("database.isSubscribe >> " + str(e))
+        print("database.delSubscribeById >> " + e)
+        db.rollback()
     db.close()
     return b
+
+def getSubscribe(subscriber_id,observable_id):
+    '''
+    获取订阅
+    :param subscriber_id:
+    :param observable_id:
+    :return:
+    '''
+    subscribe = None
+    db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                         config.database_config['passwd'], config.database_config['db_name'])
+    cursor = db.cursor()
+    sql = 'select * from subscribe where subscriber_id = ' + str(subscriber_id) + ' and observable_id = ' + str(observable_id)
+    print("database.getSubscribe >> " + sql)
+    try:
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        if results and len(results):
+            subscribe = Subscribe(results[0][0],results[0][1],results[0][2],results[0][3],results[0][4])
+    except Exception as e:
+        print("database.getSubscribe >> " + str(e))
+    db.close()
+    return subscribe

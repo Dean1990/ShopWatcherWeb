@@ -35,15 +35,17 @@ class Observable:
 
     id = 0
     date = 0
+    lowest_price = 0
 
     v_item = None
     v_trend = 0
-    v_is_subscribe = False
+    v_subscribe = None
 
-    def __init__(self,id,url,date):
+    def __init__(self,id,url,date,lowest_price):
         self.url = url
         self.id = id
         self.date = date
+        self.lowest_price = lowest_price
 
     def __str__(self):
         return "Observable["+str(self.id)+","+self.url+","+self.date+"]"
