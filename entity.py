@@ -7,7 +7,7 @@ class Item:
     max_price = 0
 
     id = 0
-    date = 0
+    date = None
 
     def __init__(self, url, title, min_price, max_price):
         self.url = url
@@ -34,7 +34,7 @@ class Observable:
     url = ''
 
     id = 0
-    date = 0
+    date = None
     lowest_price = 0
 
     v_item = None
@@ -48,7 +48,7 @@ class Observable:
         self.lowest_price = lowest_price
 
     def __str__(self):
-        return "Observable["+str(self.id)+","+self.url+","+self.date+"]"
+        return "Observable["+str(self.id)+","+self.url+","+str(self.date)+"]"
 
 class Subscribe:
     id = 0
@@ -56,7 +56,7 @@ class Subscribe:
     subscriber_id = 0
     observable_id = 0
     hope_price = 0
-    date = 0
+    date = None
 
     def __init__(self,id,subscriber_id,observable_id,hope_price,date):
         self.id = id
@@ -66,11 +66,11 @@ class Subscribe:
         self.date = date
 
     def __str__(self):
-        return "Subscribe["+str(self.id)+","+self.subscriber_id+","+self.observable_id+","+self.hope_price+","+self.date+"]"
+        return "Subscribe["+str(self.id)+","+self.subscriber_id+","+self.observable_id+","+self.hope_price+","+str(self.date)+"]"
 
 class Subscriber:
     id = 0
-    date = 0
+    date = None
 
     name =''
     phone =''
@@ -84,4 +84,20 @@ class Subscriber:
         self.date = date
 
     def __str__(self):
-        return "Subscriber["+str(self.id)+","+self.name+","+self.phone+","+self.mail+","+self.date+"]"
+        return "Subscriber["+str(self.id)+","+self.name+","+self.phone+","+self.mail+","+str(self.date)+"]"
+
+class Label:
+    id = 0
+    name = ''
+
+    date = None
+
+    v_lowest_price = 0
+
+    def __init__(self,id,name,date):
+        self.id = id
+        self.name = name
+        self.date = date
+
+    def __str__(self):
+        return "Label["+str(self.id)+","+self.name+","+str(self.date)+"]"

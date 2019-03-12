@@ -65,7 +65,10 @@ def observable_list(subscriber_id = None):
     if observables:
         # 排序 把没有订阅的放到后这
         observables.sort(key=cmp_to_key(utils.obs_cmp))
-    return render_template('observable_list.html',list = observables,user = subscriber)
+
+    #标签
+    labels = database.getLabelAll()
+    return render_template('observable_list.html',list = observables,user = subscriber,labels = labels)
 
 @app.route('/item_list/<int:id>/<int:total>')
 def item_list(id,total):
@@ -83,9 +86,8 @@ def item_list(id,total):
                 data.append(item.jsonStr())
     return jsonify(data);
 
-@app.route('/add_subscribe',methods=['POST','GET'])
-@app.route('/add_subscribe/<int:observable_id>/<int:subscriber_id>',methods=['POST','GET'])
-def add_subscribe(observable_id = None,subscriber_id = None):
+@app.route('/add_subscribe',methods=['POST'])
+def add_subscribe(observable_id = 0,subscriber_id = 0):
     '''
     订阅商品
     :return:
@@ -106,21 +108,9 @@ def add_subscribe(observable_id = None,subscriber_id = None):
                     observables = []
                     observables.append(observable)
                     task.classifyCaptureSave(observables)
+            return "success"
         else:
-            return "邮箱和商品链接不能为空"
-        return redirect(url_for('observable_list',subscriber_id = subscriber.id))
-    else:
-        url = ''
-        mail = ''
-        if observable_id:
-            observable = database.getObservable(observable_id)
-            if observable :
-                url = observable.url
-        if subscriber_id:
-            subscriber = database.getSubscriber(subscriber_id)
-            if subscriber:
-                mail = subscriber.mail
-        return render_template('add_subscribe.html',mail = mail,url = url)
+            return "邮箱和商品链接无效"
 
 @app.route('/unsubscribe/<int:observable_id>/<int:subscriber_id>')
 def unsubscribe(observable_id,subscriber_id):
@@ -131,6 +121,33 @@ def unsubscribe(observable_id,subscriber_id):
     :return:
     '''
     return jsonify(database.delSubscribeById(subscriber_id,observable_id))
+
+@app.route('/add_label',methods=['POST','GET'])
+def add_label():
+    if request.method == 'POST':
+        name = request.form['name']
+        if name:
+            database.addClazz(name)
+            return redirect(url_for('observable_list', ))
+        else:
+            return "标签无效"
+    else:
+        return render_template('add_clazz')
+
+@app.route('/label_list')
+def label_list():
+    labels = database.getLabelAll()
+    observables = database.getObservableAll()
+    for lab in labels:
+        for obs in observables:
+            if lab.id == obs.label_id:
+                if lab.v_lowest_price == 0:
+                    lab.v_lowest_price = obs.lowest_price
+                elif lab.v_lowest_price > obs.lowest_price:
+                    lab.v_lowest_price = obs.lowest_price
+    return render_template('label_list.html',labels = labels)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

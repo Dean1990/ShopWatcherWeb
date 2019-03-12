@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <title>商品监控列表</title>
     <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script src="http://code.highcharts.com/highcharts.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 
     <script language="javascript">
+        var dialog_subscribe;
         $(document).ready(function () { //这个就是传说的ready
             $(".row li").mouseover(function () {
                 //如果鼠标移到class为stripe的表格的tr上时，执行函数
@@ -17,11 +20,63 @@
             }) //移除该行的class
             $(".stripe li:even").addClass("alt");
             //给class为stripe的表格的偶数行添加class值为alt
+
+            var emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
+                mail = $( "#mail" ),
+                url = $( "#url" ),
+                hope_price = $( "#hope_price" );
+
+            function new_subscribe(){
+                $.post("/add_subscribe",
+                        {
+                            mail:mail.val(),
+                            url:url.val(),
+                            hope_price:hope_price.val()
+                        },
+                        function (data,status) {
+                            if(status == 'success'){
+                                if (data == 'success'){
+                                    dialog_subscribe.dialog("close")
+                                    window.location.reload()
+                                }else {
+                                    alert(data)
+                                }
+                            }else {
+                                alert("服务器无响应")
+                            }
+                        }
+                );
+            }
+
+            dialog_subscribe = $("#dialog-subscribe").dialog({
+                autoOpen:false,
+                height:350,
+                width:350,
+                modal:true,
+                buttons:{
+                    "订阅":new_subscribe,
+                    "取消":function () {
+                        dialog_subscribe.dialog("close")
+                    }
+                },
+
+            })
+
+            $("#create-subscribe").click(function () {
+                mail.val(this.getAttribute("data-user-mail"))
+                dialog_subscribe.dialog("open")
+            });
+
+            form = dialog_subscribe.find( "form" ).on( "submit", function( event ) {
+                event.preventDefault();
+                new_subscribe();
+            });
+
         });
 
         function over_get_items(obj, id) {
-            $.get("/item_list/" + id +"/"+20, function (data) {
-                if (data != null) {
+            $.get("/item_list/" + id +"/"+20, function (data,status) {
+                if (status == 'success' && data != null) {
                     var dates = []
                     var prices = []
 
@@ -90,6 +145,8 @@
                     $('#trend').css("top",(obj.offsetTop + 25)+"px");
 
 
+                }else {
+                    alert("未查询到数据")
                 }
             }, "json");
             $("#trend").show();
@@ -97,15 +154,19 @@
         function out_get_items(){
           $("#trend").hide();  
         }
-        function subscribe(observable_id,subscriber_id) {
-{#            window.open('/add_subscribe/'+observable_id+'/'+subscriber_id,'_self')#}
-            window.location.href='/add_subscribe/'+observable_id+'/'+subscriber_id
+        function subscribe(mail,url) {
+            $('#mail').val(mail)
+            $('#url').val(url)
+            dialog_subscribe.dialog("open")
+
         }
         function unsubscribe(observable_id,subscriber_id,title) {
             if(confirm("取消订阅 - " + title)) {
-                $.get('/unsubscribe/' + observable_id + '/' + subscriber_id, function (data) {
-                    if (data) {
+                $.get('/unsubscribe/' + observable_id + '/' + subscriber_id, function (data,status) {
+                    if (status == 'success' && data) {
                         window.location.reload()
+                    }else {
+                        alert("操作失败")
                     }
                 })
             }
@@ -163,15 +224,54 @@
             width:110px;
         }
 
+        #create-subscribe{
+            cursor:pointer;
+        }
+
     </style>
 </head>
 <body style="padding: 10px 30px 10px 30px">
 <div id="trend"></div>
-{% if user %}
-    <div style="display:table;text-align: right;width:100%;">
-        <span style="border-style: none none solid none;border-bottom-width: 1px;">用户：{{ user.mail }}</span>
-    </div>
-{% endif %}
+<div id="dialog-subscribe"  title="订阅">
+    <p class="validateTips">请填写接收通知的邮箱，商品的链接以及期望的价格</p>
+    <form method="post" action="">
+        <table align="center">
+            <tr>
+                <td class="right">邮箱：</td>
+                <td><input id="mail" name="mail" type="text" value="{{ mail }}"></td>
+            </tr>
+            <tr>
+                <td class="right">商品链接：</td>
+                <td><input id="url" name="url" type="text" value="{{ url }}"></td>
+            </tr>
+            <tr>
+                <td class="right">期望价格：¥</td>
+                <td><input id="hope_price" name="hope_price" type="text"></td>
+            </tr>
+            <tr>
+                <td class="right">标签</td>
+                <td><select id="label" name="label">
+                    {% for opt in labels %}
+                        <option value="{{ opt.id }}">{{ opt.name }}</option>
+                    {% endfor %}
+                </select></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><input type="submit" tabindex="-1" style="position:absolute; top:-1000px"></td>
+            </tr>
+        </table>
+    </form>
+</div>
+<div style="display:table;text-align: right;width:100%;">
+    {% if user %}
+        <span style="border-style: none none solid none;border-bottom-width: 1px;">用户：{{ user.mail }}</span>&nbsp;
+        <span id="create-subscribe" data-user-mail="{{ user.mail }}" onmouseover="this.style.cursor='hand'">订阅</span>&nbsp;
+    {% else %}
+        <span id="create-subscribe" onmouseover="this.style.cursor='hand'" >订阅</span>&nbsp;
+    {% endif %}
+    <span ><a href="/label_list">归类</a></span>
+</div>
 {% if list %}
     <ol class="row">
         <div class="head">
@@ -204,9 +304,9 @@
                                onclick="unsubscribe({{ foo.id }},{{ foo.v_subscribe.subscriber_id }},'{{ foo.v_item.title }}')"/>
                     {% else %}
                         {% if user %}
-                            <input class="subscribe_column" type="button" value="订阅" onclick="subscribe({{ foo.id }},{{ user.id }})"/>
+                            <input class="subscribe_column" type="button" value="订阅" onclick="subscribe('{{ user.mail }}','{{ foo.url }}')"/>
                         {% else %}
-                            <input class="subscribe_column" type="button" value="订阅" onclick="subscribe({{ foo.id }},0)"/>
+                            <input class="subscribe_column" type="button" value="订阅" onclick="subscribe('{{ user.mail }}','{{ foo.url }}')"/>
                         {% endif %}
                     {% endif %}
                 </span>

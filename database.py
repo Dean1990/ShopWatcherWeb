@@ -1,7 +1,7 @@
 import pymysql
 
 import config
-from entity import Item, Observable, Subscribe, Subscriber
+from entity import Item, Observable, Subscribe, Subscriber, Label
 from utils import trimUrl
 
 
@@ -12,10 +12,11 @@ def initDatabase():
     '''
     db = pymysql.connect(config.database_config['host'], config.database_config['user'], config.database_config['passwd'], config.database_config['db_name'])
     cursor = db.cursor()
-    item_sql = "CREATE TABLE IF NOT EXISTS `item` (`id` int(11) NOT NULL AUTO_INCREMENT,`url` varchar(255) NOT NULL,`title` varchar(255) DEFAULT NULL,`min_price` decimal(10,2) NOT NULL,`max_price` decimal(10,2) DEFAULT NULL,`date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
-    observable_sql = "CREATE TABLE IF NOT EXISTS `observable` (`id` int(11) NOT NULL AUTO_INCREMENT,`url` varchar(255) NOT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,`lowest_price` decimal(10,2) DEFAULT '0',PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
+    item_sql = "CREATE TABLE IF NOT EXISTS `item` (`id` int(11) NOT NULL AUTO_INCREMENT,`url` varchar(255) NOT NULL,`title` varchar(255) DEFAULT NULL,`min_price` decimal(10,2) NOT NULL,`max_price` decimal(10,2) DEFAULT '0.00',`date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
+    observable_sql = "CREATE TABLE IF NOT EXISTS `observable` (`id` int(11) NOT NULL AUTO_INCREMENT,`url` varchar(255) NOT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,`lowest_price` decimal(10,2) DEFAULT '0.00',`label_id` int(11) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     subscribe_sql = "CREATE TABLE IF NOT EXISTS `subscribe` (`id` int(11) NOT NULL AUTO_INCREMENT,`subscriber_id` int(11) NOT NULL,`observable_id` int(11) NOT NULL,`hope_price` decimal(10,2) DEFAULT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     subscriber_sql = "CREATE TABLE IF NOT EXISTS `subscriber` (`id` int(11) NOT NULL AUTO_INCREMENT,`name` varchar(255) DEFAULT NULL,`phone` varchar(255) DEFAULT NULL,`mail` varchar(255) NOT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
+    clazz_sql = "CREATE TABLE IF NOT EXISTS `label` (`id` int(11) NOT NULL AUTO_INCREMENT,`name` varchar(255) DEFAULT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     try:
         print("database.initDatabase >> " + item_sql)
         cursor.execute(item_sql)
@@ -378,3 +379,117 @@ def getSubscribe(subscriber_id,observable_id):
         print("database.getSubscribe >> " + str(e))
     db.close()
     return subscribe
+
+def getLabel(id):
+    '''
+    查询标签
+    :param id:
+    :return: label
+    '''
+    label = None
+    if id:
+        db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                             config.database_config['passwd'], config.database_config['db_name'])
+        cursor = db.cursor()
+        sql = 'select * from label where id = '+str(id)
+        print("database.getLabel >> " + sql)
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+            if results and len(results):
+                label = Label(results[0][0],results[0][1],results[0][2])
+        except Exception as e:
+            print("database.getLabel >> " + str(e))
+        db.close()
+    return label
+
+def getLabelByName(name):
+    '''
+    查询标签
+    :param name:
+    :return: label
+    '''
+    label = None
+    if name:
+        db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                             config.database_config['passwd'], config.database_config['db_name'])
+        cursor = db.cursor()
+        sql = 'select * from label where name = '+name
+        print("database.getLabelByName >> " + sql)
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+            if results and len(results):
+                label = Label(results[0][0],results[0][1],results[0][2])
+        except Exception as e:
+            print("database.getLabelByName >> " + str(e))
+        db.close()
+    return label
+
+def getLabelByLikeName(name):
+    '''
+    查询标签 模糊查询
+    :param name:
+    :return: label []
+    '''
+    clazzs = []
+    if name:
+        db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                             config.database_config['passwd'], config.database_config['db_name'])
+        cursor = db.cursor()
+        sql = 'select * from label where name like %'+name + '%'
+        print("database.getLabelByLikeName >> " + sql)
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+            for row in results:
+                clazzs.append(Label(row[0],row[1],row[2]))
+        except Exception as e:
+            print("database.getLabelByLikeName >> " + str(e))
+        db.close()
+    return clazzs
+
+def addLabel(name):
+    '''
+    增加标签
+    :param name:
+    :return: label
+    '''
+    label = getLabelByName(name)
+    if not label :
+        db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                             config.database_config['passwd'], config.database_config['db_name'])
+        cursor = db.cursor()
+        sql = 'insert into label(name) values("'+name+'")'
+        print("database.addLabel >> " + sql)
+        try:
+            cursor.execute(sql)
+            db.commit()
+            label = getLabelByName(name)
+        except Exception as e:
+            print("database.addLabel >> " + str(e))
+            db.rollback()
+        db.close()
+    return label
+
+def getLabelAll():
+    '''
+    查询全部标签
+    :param name:
+    :return: label []
+    '''
+    clazzs = []
+    db = pymysql.connect(config.database_config['host'], config.database_config['user'],
+                         config.database_config['passwd'], config.database_config['db_name'])
+    cursor = db.cursor()
+    sql = 'select * from label'
+    print("database.getLabelAll >> " + sql)
+    try:
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        for row in results:
+            clazzs.append(Label(row[0],row[1],row[2]))
+    except Exception as e:
+        print("database.getLabelAll >> " + str(e))
+    db.close()
+    return clazzs
