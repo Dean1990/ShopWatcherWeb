@@ -1,6 +1,3 @@
-import numpy
-
-import database
 from task import timedCaptureTask
 
 if __name__ == '__main__':
