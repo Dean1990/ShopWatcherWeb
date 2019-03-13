@@ -16,7 +16,7 @@ def initDatabase():
     observable_sql = "CREATE TABLE IF NOT EXISTS `observable` (`id` int(11) NOT NULL AUTO_INCREMENT,`url` varchar(255) NOT NULL,`label_id` int(11) DEFAULT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     subscribe_sql = "CREATE TABLE IF NOT EXISTS `subscribe` (`id` int(11) NOT NULL AUTO_INCREMENT,`subscriber_id` int(11) NOT NULL,`observable_id` int(11) NOT NULL,`hope_price` decimal(10,2) DEFAULT '0.00',`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     subscriber_sql = "CREATE TABLE IF NOT EXISTS `subscriber` (`id` int(11) NOT NULL AUTO_INCREMENT,`name` varchar(255) DEFAULT NULL,`phone` varchar(255) DEFAULT NULL,`mail` varchar(255) NOT NULL,`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
-    label_sql = "CREATE TABLE IF NOT EXISTS `label` (`id` int(11) NOT NULL AUTO_INCREMENT,`name` varchar(255) DEFAULT NULL,`lowest_price` decimal(10,2) DEFAULT '0.00',`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)） ENGINE=InnoDB DEFAULT CHARSET=utf8;"
+    label_sql = "CREATE TABLE IF NOT EXISTS `label` (`id` int(11) NOT NULL AUTO_INCREMENT,`name` varchar(255) DEFAULT NULL,`lowest_price` decimal(10,2) DEFAULT '0.00',`date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     try:
         print("database.initDatabase >> " + item_sql)
         cursor.execute(item_sql)
