@@ -2,9 +2,191 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+    <title>商品归类列表</title>
+    <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 
+    <script language="javascript">
+        var dialog_label;
+        $(document).ready(function () { //这个就是传说的ready
+            $(".row li").mouseover(function () {
+                //如果鼠标移到class为stripe的表格的tr上时，执行函数
+                $(this).addClass("over");
+            }).mouseout(function () {
+                //给这行添加class值为over，并且当鼠标一出该行时执行函数
+                $(this).removeClass("over");
+            }) //移除该行的class
+            $(".stripe li:even").addClass("alt");
+            //给class为stripe的表格的偶数行添加class值为alt
+
+            var label_name = $( "#label_name" ),
+                lowest_price = $( "#lowest_price" );
+
+            function new_label(){
+                $.post("/add_label",
+                        {
+                            label_name:label_name.val(),
+                            lowest_price:lowest_price.val()
+                        },
+                        function (data,status) {
+                            if(status == 'success'){
+                                if (data == 'success'){
+                                    dialog_label.dialog("close")
+                                    window.location.reload()
+                                }else {
+                                    alert(data)
+                                }
+                            }else {
+                                alert("服务器无响应")
+                            }
+                        }
+                );
+            }
+
+            dialog_label = $("#dialog-label").dialog({
+                autoOpen:false,
+                height:350,
+                width:300,
+                modal:true,
+                buttons:{
+                    "创建":new_label,
+                    "取消":function () {
+                        dialog_label.dialog("close")
+                    }
+                },
+
+            })
+
+            $("#create-subscribe").click(function () {
+                dialog_label.dialog("open")
+            });
+
+            form = dialog_label.find( "form" ).on( "submit", function( event ) {
+                event.preventDefault();
+                new_label();
+            });
+
+        });
+
+    </script>
+    <style>
+        .row {
+            width: auto;
+            padding: 5px 0 5px 0;
+            background: #FFF;
+        }
+
+        .row li {
+            padding: 5px 5px 5px 5px;
+            background: #FFF;
+            vertical-align: middle;
+        }
+
+        span, img {
+            vertical-align: middle;
+        }
+
+        /* 默认背景被白色 */
+        .row li.alt {
+            background: #F2F2F2;
+        }
+
+        /* 默认隔行背景颜色 */
+        .row li.over {
+            background: #EEECEB;
+        }
+
+        #trend{
+            display: none;
+            position:absolute;
+        }
+        .price_column{
+            width:100px;
+            display:inline-block;
+        }
+        .price_column2{
+            width:100px;
+            margin:0 0 0 10px;
+            display:inline-block;
+        }
+        .date_column{
+            width:100px;
+            margin:0 0 0 10px;
+            display:inline-block;
+        }
+
+        #create{
+            cursor:pointer;
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+<body style="padding: 10px 30px 10px 30px">
+<div id="trend"></div>
+<div id="dialog-label"  title="新的标签">
+    <p class="validateTips">请填写标签名，历史最低选填</p>
+    <form method="post" action="">
+        <table align="center">
+            <tr>
+                <td class="right">标签：</td>
+                <td><input id="label_name" name="label_name" type="text" ></td>
+            </tr>
+            <tr>
+                <td class="right">历史最低：</td>
+                <td><input id="lowest_price" name="lowest_price" type="text"></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><input type="submit" tabindex="-1" style="position:absolute; top:-1000px"></td>
+            </tr>
+        </table>
+    </form>
+</div>
+<div style="display:table;text-align: right;width:100%;">
+    {% if user %}
+        <span style="border-style: none none solid none;border-bottom-width: 1px;">用户：{{ user.mail }}</span>&nbsp;
+    {% else %}
+        <span id="create" onmouseover="this.style.cursor='hand'" >新的标签</span>&nbsp;
+    {% endif %}
+    <span ><a href="/observable_list" target="_self">商品</a></span>
+</div>
+{% if labels %}
+    <ol class="row">
+        <div class="head">
+            <b>名称</b>
+            <span style="float:right">
+                    <b class="price_column">当前最低</b>
+                    <b class="price_column2">历史最低</b>
+                    <b class="date_column">更新日期</b>
+                </span>
+        </div>
+        {% for foo in labels %}
+            <a href="/observable_list/label/{{ foo.id }}" target="_blank">
+            <li>
+                <span>{{ foo.name }}</span>
+                <span style="float:right">
+                    <span class="price_column" >
+                        ¥{{ foo.v_min_pirce }}
+                        {% if foo.v_trend>0 %}
+                            <img style="width: 20px;height: 20px" src="{{ url_for('static',filename='up.png') }}"/>
+                        {% elif foo.v_trend<0 %}
+                            <img style="width: 20px;height: 20px" src="{{ url_for('static',filename='off.png') }}"/>
+                        {% endif %}
+                    </span>
+                    <span class="price_column2">¥{{ foo.lowest_price }}</span>
+                    <span class="date_column">
+                        {{ foo.date.strftime('%m-%d %H:%M') }}
+                    </span>
+                </span>
+            </li>
+            </a>
+        {% endfor %}
+    </ol>
+{% else %}
+    <span>没有数据</span>
+{% endif %}
 </body>
 </html>

@@ -8,18 +8,19 @@ import datetime
 
 import config
 from database import getObservableAll, addItem, getSubscribes, getItems, getSubscriber, getObservableByUrl, \
-    getSubscribe, addObservable, addSubscribe, getSubscriberByMail, delSubscribeById, updateObservable, updateSubscribe
+    getSubscribe, addObservable, addSubscribe, getSubscriberByMail, delSubscribeById, getLabel, updateLabel, \
+    updateSubscribe
 from spider import captureTaobaoItem
 from utils import trimUrl
 
 
-def subscribe(subscriber_id, url, hope_price=0):
+def subscribe(subscriber_id, url,label_id,hope_price=0):
     '''
     订阅
     :return:
     '''
     url = trimUrl(url)
-    if subscriber_id and url:
+    if subscriber_id and url and label_id:
 
             observable = getObservableByUrl(url)
             if observable:
@@ -28,6 +29,7 @@ def subscribe(subscriber_id, url, hope_price=0):
                 if sub :
                     # 该用户已经订阅过
                     print("task.subscribe >> subscriber id:" + str(subscriber_id) + "has subscribed " + url)
+                    # 更新期望价格
                     sub.hope_price = hope_price
                     updateSubscribe(sub)
                 else:
@@ -35,12 +37,10 @@ def subscribe(subscriber_id, url, hope_price=0):
                     addSubscribe(subscriber_id,observable.id,hope_price)
             else:
                 # 先添加到被观察者中，再订阅
-                addObservable(url)
-                # 查询出ID
-                observable = getObservableByUrl(url)
+                observable = addObservable(url,label_id)
                 if observable:
                     # 订阅
-                    addSubscribe(subscriber_id, observable.id, hope_price)
+                    addSubscribe(subscriber_id, observable.id,hope_price)
 
 def unsubscribe(url,mail):
     '''
@@ -77,10 +77,15 @@ def classifyCaptureSave(observables):
         if item:
             # 保存
             addItem(item)
-            #更新最低价
-            if obs.lowest_price  == 0 or float(obs.lowest_price) > float(item.min_price):
-                obs.lowest_price = item.min_price
-                updateObservable(obs)
+            if obs.label_id:
+                #更新最低价
+                label = getLabel(obs.label_id)
+                if label:
+                    if label.lowest_price == 0 or float(label.lowest_price) > float(item.min_price):
+                        label.lowest_price = item.min_price
+                        # 保存最低价
+                        updateLabel(label)
+
             # 对比价格
             comparePrice(item,obs.id)
 

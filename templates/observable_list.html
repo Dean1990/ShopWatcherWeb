@@ -22,16 +22,18 @@
             //给class为stripe的表格的偶数行添加class值为alt
 
             var emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
-                mail = $( "#mail" ),
-                url = $( "#url" ),
-                hope_price = $( "#hope_price" );
+                    mail = $( "#mail" ),
+                    url = $( "#url" ),
+                    hope_price = $( "#hope_price" ),
+                    label = $("#label");
 
             function new_subscribe(){
                 $.post("/add_subscribe",
                         {
                             mail:mail.val(),
                             url:url.val(),
-                            hope_price:hope_price.val()
+                            hope_price:hope_price.val(),
+                            label_id:label.val()
                         },
                         function (data,status) {
                             if(status == 'success'){
@@ -226,6 +228,7 @@
 
         #create-subscribe{
             cursor:pointer;
+            text-decoration: underline;
         }
 
     </style>
@@ -270,8 +273,13 @@
     {% else %}
         <span id="create-subscribe" onmouseover="this.style.cursor='hand'" >订阅</span>&nbsp;
     {% endif %}
-    <span ><a href="/label_list">归类</a></span>
+    <span ><a href="/label_list" target="_self">归类</a></span>
 </div>
+{% if label %}
+    <h3><span style="font-size: small">标签：</span>
+        <span style="color: red;">[{{ label.name }}]</span>
+                &nbsp;<span style="font-size: small">相关</span></h3>
+{% endif %}
 {% if list %}
     <ol class="row">
         <div class="head">
@@ -295,7 +303,7 @@
                             <img style="width: 20px;height: 20px" src="{{ url_for('static',filename='off.png') }}"/>
                         {% endif %}
                     </span>
-                    <span class="price_column2">¥{{ foo.lowest_price }}</span>
+                    <span class="price_column2">¥{{ foo.v_label.lowest_price }}</span>
                     <span class="date_column">
                         {{ foo.v_item.date.strftime('%m-%d %H:%M') }}
                     </span>

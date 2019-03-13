@@ -2,11 +2,88 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Shop Watcher</title>
+    <title>商品监控</title>
+    <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script>
+        $(document).ready(function () {
+            var dialog_login;
+            var emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
+                    mail = $("#mail");
+
+            function login() {
+                $.post("/login_or_regist",
+                        {
+                            mail: mail.val(),
+                        },
+                        function (data, status) {
+                            if (status == 'success') {
+                                if (data == 'success') {
+                                    dialog_login.dialog("close")
+                                    window.location.reload()
+                                } else {
+                                    alert(data)
+                                }
+                            } else {
+                                alert("服务器无响应")
+                            }
+                        }
+                );
+            }
+
+            dialog_login = $("#dialog-login").dialog({
+                autoOpen: false,
+                height: 350,
+                width: 350,
+                modal: true,
+                buttons: {
+                    "登录/注册": login,
+                    "取消": function () {
+                        dialog_login.dialog("close")
+                    }
+                },
+
+            })
+
+            $("#login").click(function () {
+                dialog_login.dialog("open")
+            });
+
+            form = dialog_login.find("form").on("submit", function (event) {
+                event.preventDefault();
+                login();
+            });
+
+        });
+    </script>
+    <style>
+        #login {
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    </style>
 </head>
-<body>
-<h3>Hello World!</h3>
-<div><a href="observable_list">商品监控列表</a></div>
-<div><a href="add_subscribe">订阅商品</a></div>
+<body style="padding: 10px 50px 10px 50px">
+<h3>商品监控</h3>
+<div id="dialog-login" title="登录/注册">
+    <p class="validateTips">登录只为保存Cookie</p>
+    <form method="post" action="">
+        <table align="center">
+            <tr>
+                <td class="right">邮箱：</td>
+                <td><input id="mail" name="mail" type="text"></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><input type="submit" tabindex="-1" style="position:absolute; top:-1000px"></td>
+            </tr>
+        </table>
+    </form>
+</div>
+<div><a href="/observable_list">商品监控列表</a></div>
+<div><a href="/label_list">标签列表</a></div>
+<div><span id="login" onmouseover="this.style.cursor='hand'">登录/注册</span></div>
 </body>
 </html>

@@ -31,21 +31,24 @@ class Item:
         # return "{'id':"+str(self.id)+",'url':'"+self.url+"','title':'"+self.title+"','min_price':"+str(self.min_price)+",'max_price':"+str(self.max_price)+",'date':"+str(self.date)+"}"
 
 class Observable:
-    url = ''
 
     id = 0
+    url = ''
+    label_id = 0
     date = None
-    lowest_price = 0
+
 
     v_item = None
-    v_trend = 0
+    v_trend = 0 #用于标记是涨是跌 正数为涨，负数为跌
     v_subscribe = None
+    v_label = None
 
-    def __init__(self,id,url,date,lowest_price):
+    def __init__(self,id,url,label_id,date):
         self.url = url
         self.id = id
+        self.label_id = label_id
         self.date = date
-        self.lowest_price = lowest_price
+
 
     def __str__(self):
         return "Observable["+str(self.id)+","+self.url+","+str(self.date)+"]"
@@ -58,7 +61,7 @@ class Subscribe:
     hope_price = 0
     date = None
 
-    def __init__(self,id,subscriber_id,observable_id,hope_price,date):
+    def __init__(self, id, subscriber_id, observable_id, hope_price, date):
         self.id = id
         self.subscriber_id = subscriber_id
         self.observable_id = observable_id
@@ -66,7 +69,8 @@ class Subscribe:
         self.date = date
 
     def __str__(self):
-        return "Subscribe["+str(self.id)+","+self.subscriber_id+","+self.observable_id+","+self.hope_price+","+str(self.date)+"]"
+        return "Subscribe[" + str(self.id) + "," + self.subscriber_id + "," + self.observable_id + "," \
+               + self.hope_price + "," + str(self.date) + "]"
 
 class Subscriber:
     id = 0
@@ -89,14 +93,16 @@ class Subscriber:
 class Label:
     id = 0
     name = ''
-
+    lowest_price = 0 # 历史最低价
     date = None
 
-    v_lowest_price = 0
+    v_min_pirce =0 # 当前最低价
+    v_trend = 0 #用于标记是涨是跌 正数为涨，负数为跌
 
-    def __init__(self,id,name,date):
+    def __init__(self,id,name,lowest_price,date):
         self.id = id
         self.name = name
+        self.lowest_price = lowest_price
         self.date = date
 
     def __str__(self):

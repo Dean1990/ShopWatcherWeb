@@ -1,6 +1,8 @@
-from database import initDatabase
-from task import timedCaptureTask, unsubscribe
+import numpy
+
+import database
+from task import timedCaptureTask
 
 if __name__ == '__main__':
-    # initDatabase()
+    # database.initDatabase()
     timedCaptureTask()
