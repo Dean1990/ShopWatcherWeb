@@ -156,9 +156,12 @@
         function out_get_items(){
           $("#trend").hide();  
         }
-        function subscribe(mail,url) {
+        function subscribe(mail,url,label_name) {
             $('#mail').val(mail)
             $('#url').val(url)
+            console.log(label_name);
+            $('#label').find("option").prop("selected",false);
+            $('#label').find("option:contains('"+label_name+"')").prop("selected",true)
             dialog_subscribe.dialog("open")
 
         }
@@ -253,7 +256,7 @@
             </tr>
             <tr>
                 <td class="right">标签</td>
-                <td><select id="label" name="label">
+                <td><select id="label" name="label" autocomplete="off">
                     {% for opt in labels %}
                         <option value="{{ opt.id }}">{{ opt.name }}</option>
                     {% endfor %}
@@ -312,9 +315,11 @@
                                onclick="unsubscribe({{ foo.id }},{{ foo.v_subscribe.subscriber_id }},'{{ foo.v_item.title }}')"/>
                     {% else %}
                         {% if user %}
-                            <input class="subscribe_column" type="button" value="订阅" onclick="subscribe('{{ user.mail }}','{{ foo.url }}')"/>
+                            <input class="subscribe_column" type="button" value="订阅"
+                                   onclick="subscribe('{{ user.mail }}','{{ foo.url }}','{{ foo.v_label.name }}')"/>
                         {% else %}
-                            <input class="subscribe_column" type="button" value="订阅" onclick="subscribe('{{ user.mail }}','{{ foo.url }}')"/>
+                            <input class="subscribe_column" type="button" value="订阅"
+                                   onclick="subscribe('','{{ foo.url }}','{{ foo.v_label.name }}')"/>
                         {% endif %}
                     {% endif %}
                 </span>

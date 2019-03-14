@@ -9,7 +9,7 @@ import datetime
 import config
 from database import getObservableAll, addItem, getSubscribes, getItems, getSubscriber, getObservableByUrl, \
     getSubscribe, addObservable, addSubscribe, getSubscriberByMail, delSubscribeById, getLabel, updateLabel, \
-    updateSubscribe
+    updateSubscribe, updateObservable
 from spider import captureTaobaoItem
 from utils import trimUrl
 
@@ -35,6 +35,9 @@ def subscribe(subscriber_id, url,label_id,hope_price=0):
                 else:
                     # 订阅
                     addSubscribe(subscriber_id,observable.id,hope_price)
+                # 更新标签
+                observable.label_id = label_id
+                updateObservable(observable)
             else:
                 # 先添加到被观察者中，再订阅
                 observable = addObservable(url,label_id)
