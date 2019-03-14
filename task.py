@@ -1,10 +1,11 @@
+import datetime
 import smtplib
 import threading
 from email.header import Header
 from email.mime.text import MIMEText
 
-import datetime
 # import matplotlib.pyplot as plt
+import time
 
 import config
 from database import getObservableAll, addItem, getSubscribes, getItems, getSubscriber, getObservableByUrl, \
@@ -71,7 +72,7 @@ def classifyCaptureSave(observables):
     capture_work = False
     for obs in observables:
         if capture_work:
-            datetime.time.sleep(2) # 暂停2秒抓取一次
+            time.sleep(5) # 暂停5秒抓取一次
         item = None
         if obs.url.startswith("https://item.taobao.com"):
             item = captureTaobaoItem(obs.url)
@@ -102,7 +103,7 @@ def timedCaptureTask():
     try :
         classifyCaptureSave(getObservableAll())
     except Exception as e:
-        print(type(e))
+        print(str(e))
         print("timedCaptureTask timer reset")
     timer = threading.Timer(config.capture_interval,timedCaptureTask)
     timer.start()
