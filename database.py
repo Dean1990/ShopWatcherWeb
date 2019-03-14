@@ -43,7 +43,7 @@ def addItem(item):
     if item:
         db = pymysql.connect(config.database_config['host'], config.database_config['user'], config.database_config['passwd'], config.database_config['db_name'])
         cursor = db.cursor()
-        sql = "insert into item(url,title,min_price,max_price) values('" + item.url + "','" + item.title + "'," + item.min_price + "," + item.max_price + ")"
+        sql = "insert into item(url,title,min_price,max_price) values('" + item.url + "','" + item.title + "'," + str(item.min_price) + "," + str(item.max_price) + ")"
         print("database.saveItem >> " + sql)
         try:
             cursor.execute(sql)

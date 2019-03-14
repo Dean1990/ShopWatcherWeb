@@ -53,7 +53,7 @@
             dialog_subscribe = $("#dialog-subscribe").dialog({
                 autoOpen:false,
                 height:350,
-                width:350,
+                width:600,
                 modal:true,
                 buttons:{
                     "订阅":new_subscribe,
@@ -258,7 +258,7 @@
                 <td class="right">标签</td>
                 <td><select id="label" name="label" autocomplete="off">
                     {% for opt in labels %}
-                        <option value="{{ opt.id }}">{{ opt.name }}</option>
+                        <option value="{{ opt.id }}">{{ opt.name}}(¥{{ opt.lowest_price}}) </option>
                     {% endfor %}
                 </select></td>
             </tr>
@@ -296,10 +296,10 @@
         </div>
         {% for foo in list %}
             <li><a href="{{ foo.url }}" target="_blank">
-                <span>{{ foo.v_item.title }}</span></a>
+                <span>{{ foo.v_item.title if foo.v_item else '[暂未抓取]['+foo.v_label.name+']商品' }}</span></a>
                 <span style="float:right">
                     <span class="price_column" onmouseover="over_get_items(this,'{{ foo.id }}')" onmouseout="out_get_items()">
-                        ¥{{ foo.v_item.min_price }}
+                        ¥{{ foo.v_item.min_price if foo.v_item else '0.00'}}
                         {% if foo.v_trend>0 %}
                             <img style="width: 20px;height: 20px" src="{{ url_for('static',filename='up.png') }}"/>
                         {% elif foo.v_trend<0 %}
@@ -308,11 +308,11 @@
                     </span>
                     <span class="price_column2">¥{{ foo.v_label.lowest_price }}</span>
                     <span class="date_column">
-                        {{ foo.v_item.date.strftime('%m-%d %H:%M') }}
+                        {{ foo.v_item.date.strftime('%m-%d %H:%M') if foo.v_item else ''}}
                     </span>
                     {% if foo.v_subscribe %}
                         <input class="subscribe_column" type="button" value="取消订阅(¥{{ foo.v_subscribe.hope_price }})"
-                               onclick="unsubscribe({{ foo.id }},{{ foo.v_subscribe.subscriber_id }},'{{ foo.v_item.title }}')"/>
+                               onclick="unsubscribe({{ foo.id }},{{ foo.v_subscribe.subscriber_id }},'{{ foo.v_item.title if foo.v_item else '[暂未抓取]['+foo.v_label.name+']商品'}}')"/>
                     {% else %}
                         {% if user %}
                             <input class="subscribe_column" type="button" value="订阅"
