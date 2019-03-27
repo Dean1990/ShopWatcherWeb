@@ -76,7 +76,7 @@
 
         });
 
-        function over_get_items(obj, id) {
+        function over_get_items(label_name, id) {
             $.get("/item_list/" + id +"/"+20, function (data,status) {
                 if (status == 'success' && data != null) {
                     var dates = []
@@ -96,7 +96,7 @@
                         text: '价格波动'
                     };
                     var subtitle = {
-                        text: 'Source: taobao.com'
+                        text: '标签: '+label_name
                     };
                     var xAxis = {
                         categories: dates
@@ -143,14 +143,17 @@
 
                     $('#trend').highcharts(json);
 
-                    if ($('#trend').outerHeight(true)/2>obj.offsetTop){
-                        $('#trend').css("top","0px");
-                    }else if($('#trend').outerHeight(true)/2<(document.body.clientHeight - obj.offsetTop)) {
-                        $('#trend').css("top",(document.body.clientHeight - $('#trend').outerHeight(true))+"px");
-                    }else {
-                        
-                    }
-                    $('#trend').css("left",(obj.offsetLeft - $('#trend').outerWidth(true))+"px");
+                    {#if ($('#trend').outerHeight(true)/2>obj.offsetTop){#}
+                    {#    $('#trend').css("top","0px");#}
+                    {#}else if($('#trend').outerHeight(true)/2<(document.body.clientHeight - obj.offsetTop)) {#}
+                    {#    $('#trend').css("top",(document.body.clientHeight - $('#trend').outerHeight(true))+"px");#}
+                    {#}else {#}
+                    {#    $('#trend').css("top", (obj.offsetTop - $('#trend').outerHeight(true)/2) + "px");#}
+                    {#}#}
+                    {#$('#trend').css("left",(obj.offsetLeft - $('#trend').outerWidth(true))+"px");#}
+
+                    $('#trend').css("left","30px");
+                    $('#trend').css("top","30px");
 
 
 
@@ -214,7 +217,7 @@
 
         #trend{
             display: none;
-            position:absolute;
+            position: fixed;
         }
         .price_column{
             width:100px;
@@ -305,7 +308,7 @@
             <li><a href="{{ foo.url }}" target="_blank">
                 <span>{{ foo.v_item.title if foo.v_item else '[暂未抓取]['+foo.v_label.name+']商品' }}</span></a>
                 <span style="float:right">
-                    <span class="price_column" onmouseover="over_get_items(this,'{{ foo.id }}')" onmouseout="out_get_items()">
+                    <span class="price_column" onmouseover="over_get_items('{{ foo.v_label.name }}','{{ foo.id }}')" onmouseout="out_get_items()">
                         ¥{{ foo.v_item.min_price if foo.v_item else '0.00'}}
                         {% if foo.v_trend>0 %}
                             <img style="width: 20px;height: 20px" src="{{ url_for('static',filename='up.png') }}"/>
