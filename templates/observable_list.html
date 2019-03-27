@@ -143,14 +143,12 @@
 
                     $('#trend').highcharts(json);
 
-{#                    $('#trend').css("left",(obj.offsetLeft - $('#trend').outerWidth(true))+"px");#}
-{#                    $('#trend').css("top",(obj.offsetTop + 25)+"px");#}
                     if ($('#trend').outerHeight(true)/2>obj.offsetTop){
                         $('#trend').css("top","0px");
                     }else if($('#trend').outerHeight(true)/2<(document.body.clientHeight - obj.offsetTop)) {
                         $('#trend').css("top",(document.body.clientHeight - $('#trend').outerHeight(true))+"px");
                     }else {
-{#                        $('#trend').css("top", (obj.offsetTop - $('#trend').outerHeight(true)/2) + "px");#}
+                        
                     }
                     $('#trend').css("left",(obj.offsetLeft - $('#trend').outerWidth(true))+"px");
 
